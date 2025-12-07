@@ -175,6 +175,9 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', '<leader>td', function()
+  vim.diagnostic.enable(not vim.diagnostic.is_enabled())
+end, { silent = true, noremap = true })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -673,7 +676,24 @@ require('lazy').setup({
       local servers = {
         clangd = {},
         -- gopls = {},
-        pyright = {},
+        basedpyright = {
+          settings = {
+            basedpyright = {
+              analysis = {
+                useLibraryCodeForTypes = true,
+                typeCheckingMode = 'basic',
+                diagnosticMode = 'workspace',
+                autoSearchPath = true,
+                inlayHints = {
+                  callArgumentNames = true,
+                },
+                extraPaths = {
+                  '/home/gp/roboticLab/usd_world/OpenUSD_install/lib/python',
+                },
+              },
+            },
+          },
+        },
         rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -773,6 +793,19 @@ require('lazy').setup({
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         javascript = { 'prettierd', 'prettier', stop_after_first = true },
+      },
+      formatters = {
+        usd_formatter = {
+          command = 'usdcat',
+          args = { '--out', '$FILENAME' },
+          stdin = false, -- usdcat doesn’t support stdin
+          exit_codes = { 0 }, -- 0 = success
+          env = nil, -- optional: add env vars if needed
+          condition = function(ctx)
+            -- Only run if usdcat exists on system
+            return vim.fn.executable 'usdcat' == 1
+          end,
+        },
       },
     },
   },
@@ -964,6 +997,57 @@ require('lazy').setup({
     --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
 
+  {
+    'nvimdev/lspsaga.nvim',
+    event = 'LspAttach',
+    -- another option to lazy load lspsaga using filetype
+    --ft = {'c', 'cpp', 'lua', 'rust', 'go'},
+    config = function()
+      require('lspsaga').setup {}
+    end,
+  },
+
+  {
+    'ludovicchabant/vim-gutentags',
+    config = function()
+      vim.g.gutentags_project_root = { '.git', '.hg', '.svn' }
+      vim.g.gutentags_ctags_tagfile = '.tags'
+      vim.g.gutentags_add_default_project_roots = 1
+    end,
+  },
+  {
+    'stevearc/aerial.nvim',
+    opts = {},
+    -- Optional dependencies
+    dependencies = {
+      'nvim-treesitter/nvim-treesitter',
+      'nvim-tree/nvim-web-devicons',
+    },
+    config = function()
+      require('aerial').setup {
+        -- optionally use on_attach to set keymaps when aerial has attached to a buffer
+        on_attach = function(bufnr)
+          -- Jump forwards/backwards with '{' and '}'
+          vim.keymap.set('n', '{', '<cmd>AerialPrev<CR>', { buffer = bufnr })
+          vim.keymap.set('n', '}', '<cmd>AerialNext<CR>', { buffer = bufnr })
+        end,
+      }
+      -- You probably also want to set a keymap to toggle aerial
+      vim.keymap.set('n', '<leader>a', '<cmd>AerialToggle!<CR>')
+    end,
+  },
+
+  {
+    'akinsho/toggleterm.nvim',
+    version = '*',
+    opts = {
+      size = 10,
+      open_mapping = [[<c-\>]],
+      direction = 'horizontal',
+      -- other options …
+    },
+  },
+
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
@@ -984,8 +1068,10 @@ require('lazy').setup({
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
   --
+  -- require 'custom.usd-auto-formatter',
+
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!
   -- In normal mode type `<space>sh` then write `lazy.nvim-plugin`

@@ -12,7 +12,7 @@ return {
     -- Lazy loading is not recommended because it is very tricky to make it work correctly in all situations.
     lazy = false,
     config = function()
-      CustomOilBar = function()
+      vim.g.CustomOilBar = function()
         local path = vim.fn.expand '%'
         path = path:gsub('oil://', '')
 
@@ -46,7 +46,7 @@ return {
       vim.keymap.set('n', '-', '<CMD>Oil<CR>', { desc = 'Open parent directory' })
 
       -- Open parent directory in floating window
-      vim.keymap.set('n', '<space>-', require('oil').toggle_float)
+      vim.keymap.set('n', '<space>-', require('oil').toggle_float, { desc = 'Open parent directory in floating window' })
     end,
   },
 }

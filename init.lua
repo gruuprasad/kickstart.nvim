@@ -358,9 +358,17 @@ require('lazy').setup({
           },
         },
         pickers = {
-          find_files = {
-            find_command = { 'fd', '--type', 'f', '--hidden', '--follow', '--exclude', '.git' },
-          },
+          find_files = (function()
+            -- Use fd if available, otherwise fall back to default find behavior
+            if vim.fn.executable 'fd' == 1 then
+              return {
+                find_command = { 'fd', '--type', 'f', '--hidden', '--follow', '--exclude', '.git' },
+              }
+            else
+              -- Fall back to default (no find_command specified uses Telescope's default)
+              return {}
+            end
+          end)(),
           live_grep = {
             additional_args = function()
               return { '--hidden', '--glob=!.git' }
@@ -393,7 +401,7 @@ require('lazy').setup({
           prompt_title = 'Grep in Project',
         }
       end, { desc = '[S]earch by [G]rep (project)' })
-      
+
       -- Grep in current directory
       vim.keymap.set('n', '<leader>sc', function()
         builtin.live_grep {
@@ -804,6 +812,28 @@ require('lazy').setup({
           },
         },
         opts = {},
+        config = function()
+          local luasnip = require 'luasnip'
+          -- Use Ctrl+J/K for snippet navigation instead of Tab
+          vim.keymap.set({ 'i', 's' }, '<C-j>', function()
+            if luasnip.expand_or_jumpable() then
+              luasnip.expand_or_jump()
+            end
+          end, { silent = true, desc = 'LuaSnip: Expand or jump forward' })
+
+          vim.keymap.set({ 'i', 's' }, '<C-k>', function()
+            if luasnip.jumpable(-1) then
+              luasnip.jump(-1)
+            end
+          end, { silent = true, desc = 'LuaSnip: Jump backward' })
+
+          -- For selecting choice nodes (if you have them)
+          vim.keymap.set('i', '<C-l>', function()
+            if luasnip.choice_active() then
+              luasnip.change_choice(1)
+            end
+          end, { silent = true, desc = 'LuaSnip: Change choice' })
+        end,
       },
       'folke/lazydev.nvim',
     },
@@ -851,9 +881,10 @@ require('lazy').setup({
       },
 
       sources = {
-        default = { 'lsp', 'path', 'snippets', 'lazydev' },
+        default = { 'lsp', 'path', 'snippets', 'lazydev', 'codeium' },
         providers = {
           lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
+          codeium = { name = 'Codeium', module = 'codeium.blink', async = true },
         },
       },
 
@@ -941,7 +972,27 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'cpp', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python', 'rust', 'javascript', 'typescript', 'json', 'yaml', 'toml' },
+      ensure_installed = {
+        'bash',
+        'c',
+        'cpp',
+        'diff',
+        'html',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'query',
+        'vim',
+        'vimdoc',
+        'python',
+        'rust',
+        'javascript',
+        'typescript',
+        'json',
+        'yaml',
+        'toml',
+      },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -989,7 +1040,7 @@ require('lazy').setup({
         end,
       }
       -- You probably also want to set a keymap to toggle aerial
-      vim.keymap.set('n', '<leader>a', '<cmd>AerialToggle!<CR>', { desc = 'Toggle [A]erial code outline' })
+      vim.keymap.set('n', '<leader>ai', '<cmd>AerialToggle!<CR>', { desc = 'Toggle [A]erial code outline' })
     end,
   },
 
@@ -1002,6 +1053,13 @@ require('lazy').setup({
       direction = 'horizontal',
       -- other options …
     },
+    config = function()
+      require('toggleterm').setup {
+        size = 10,
+        open_mapping = [[<c-\>]],
+        direction = 'horizontal',
+      }
+    end,
   },
 
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
@@ -1019,6 +1077,43 @@ require('lazy').setup({
   require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
   require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+
+  {
+    'GeorgesAlkhouri/nvim-aider',
+    cmd = 'Aider',
+    keys = {
+      { '<leader>a/', '<cmd>Aider toggle<cr>', desc = 'Toggle Aider' },
+      { '<leader>af', '<cmd>Aider toggle float<cr>', desc = 'Aider: Floating terminal' },
+      { '<leader>as', '<cmd>Aider send<cr>', desc = 'Send to Aider', mode = { 'n', 'v' } },
+      { '<leader>ac', '<cmd>Aider command<cr>', desc = 'Aider Commands' },
+      { '<leader>ab', '<cmd>Aider buffer<cr>', desc = 'Send Buffer' },
+      { '<leader>a+', '<cmd>Aider add<cr>', desc = 'Add File' },
+      { '<leader>a-', '<cmd>Aider drop<cr>', desc = 'Drop File' },
+      { '<leader>ar', '<cmd>Aider add readonly<cr>', desc = 'Add Read-Only' },
+      { '<leader>aR', '<cmd>Aider reset<cr>', desc = 'Reset Session' },
+    },
+    dependencies = {
+      { 'folke/snacks.nvim', version = '>=2.24.0' },
+      'catppuccin/nvim',
+      'nvim-tree/nvim-tree.lua',
+      {
+        'nvim-neo-tree/neo-tree.nvim',
+        version = '>=3.30',
+        opts = function(_, opts)
+          require('nvim_aider.neo_tree').setup(opts)
+        end,
+      },
+    },
+    opts = {
+      -- Terminal mappings for perfect UX
+      mappings = {
+        t = {
+          ['<esc><esc>'] = '<C-\\><C-n>',
+          ['<leader>af'] = '<C-\\><C-n><cmd>Aider toggle float<cr>',
+        },
+      },
+    },
+  },
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.

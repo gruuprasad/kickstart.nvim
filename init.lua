@@ -1112,9 +1112,22 @@ require('lazy').setup({
         --"--no-auto-commits",
         '--pretty',
         '--stream',
+        '--dark-mode',
       },
       auto_reload = true,
       notifications = true,
+      -- Theme colors (automatically uses Catppuccin flavor if available)
+      theme = {
+        user_input_color = '#a6da95',
+        tool_output_color = '#8aadf4',
+        tool_error_color = '#ed8796',
+        tool_warning_color = '#eed49f',
+        assistant_output_color = '#c6a0f6',
+        completion_menu_color = '#cad3f5',
+        completion_menu_bg_color = '#24273a',
+        completion_menu_current_color = '#181926',
+        completion_menu_current_bg_color = '#f4dbd6',
+      },
       -- Timeout in ms for quick commands.
       quick_idle_timeout = 500,
       -- A list of slash-commands that should have a shorter idle timeout.

@@ -1105,6 +1105,42 @@ require('lazy').setup({
       },
     },
     opts = {
+      -- Add your Aider settings here (combines both approaches)
+      aider_cmd = 'aider',
+      args = {
+        --"--model", "gpt-4o-mini",  -- Your global model override
+        --"--no-auto-commits",
+        '--pretty',
+        '--stream',
+      },
+      auto_reload = true,
+      notifications = true,
+      -- Timeout in ms for quick commands.
+      quick_idle_timeout = 500,
+      -- A list of slash-commands that should have a shorter idle timeout.
+      quick_commands = {
+        '/add',
+        '/drop',
+        '/read-only',
+        '/ls',
+        '/clear',
+        '/reset',
+        '/undo',
+      },
+      -- snacks.picker.layout.Config configuration
+      picker_cfg = {
+        preset = 'vscode',
+      },
+      -- Other snacks.terminal.Opts options
+      config = {
+        os = { editPreset = 'nvim-remote' },
+        gui = { nerdFontsVersion = '3' },
+      },
+      win = {
+        wo = { winbar = 'Aider' },
+        style = 'nvim_aider',
+        position = 'bottom',
+      },
       -- Terminal mappings for perfect UX
       mappings = {
         t = {
@@ -1113,8 +1149,8 @@ require('lazy').setup({
         },
       },
     },
+    config = true, -- REQUIRED: This applies your opts to setup()
   },
-
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
   --
